@@ -1,0 +1,102 @@
+---
+title: "Assignment1 "
+author: "Haorui Tao s2039924"
+output:
+  pdf_document:
+          latex_engine: xelatex
+          number_sections: yes
+fig_caption: yes
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = NA, message = FALSE, warning = FALSE)
+```
+
+```{r library, eval = TRUE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(skimr)
+library(knitr)
+library(moderndive)
+library(kableExtra)
+library(gridExtra)
+library(datasets)
+library(MASS)
+library(GGally)
+library(maxLik)
+library(gapminder)
+
+```
+# 2{-}
+## (b){-}
+From the code we can see that $\hat\mu_{MLE}=5.54$ and $\hat\sigma_{MLE}=1.41833$.
+```{r q2, include = TRUE, message = FALSE, tidy = TRUE,echo=FALSE}
+#load data
+load('dataex2.Rdata')
+#write the function of the log-like function
+log_like <- function(param,data){
+  x <- data[,1]; r <- data[,2]
+  mu <-  param[1]
+  sigma <- param[2]
+  sum(r*log(dnorm(x,mu,sigma))+(1-r)*log(pnorm(x,mu,sigma)))
+}
+#calculate the maximum likelihood estimate
+mle <- maxLik(logLik = log_like, data = dataex2, start = c(mu = 4.4, sigma = 1.5))
+
+summary(mle)
+```
+
+# 4{-}
+
+```{r q4, include = TRUE, message = FALSE, tidy = TRUE,echo=FALSE}
+#load data
+load('dataex4.Rdata')
+
+#write the function about "P_{i}"
+P <- function(x,beta){
+  a <- beta[1]
+  b <- beta[2]
+  exp(a+b*x)/(1+exp(a+b*x))
+}
+
+#write the function for EM algorithm
+expex <- function(beta_in, eps,data){
+#initialize
+diff <- 1
+beta<- beta_in
+
+while(diff > eps){
+beta_old <- beta
+#construct the loglikihood function
+loglike <- function(beta,data){
+  #devide data into y_obs and y_mis
+  y_mis <- data[is.na(data[,2]),]
+  y_obs <- data[is.na(data[,2])==FALSE,]
+  beta0 <- beta[1]
+  beta1 <- beta[2]
+  #derive the loglikelihood function
+  sum(y_obs[,2]*(beta0+beta1*y_obs[,1]))+sum(P(y_mis[,1],beta_old)*(beta0+y_mis[,1]*beta1))+sum(log(1-P(data[1,],beta)))
+}
+#calculate mle
+mle <- maxLik(loglike,data = dataex4,start = c(beta0 = beta_old[1], beta1 = beta_old[2]))
+
+#update beta
+beta <- mle$estimate
+#calculate the difference 
+diff <- sum(abs(beta_old-beta))
+#update beta.old
+beta_old <- beta
+}
+return(beta)
+}
+
+expex(c(3,200),0.0001,dataex4)
+
+
+```
+
+```{r , include = TRUE, message = FALSE, tidy = TRUE, fig.align = "center",echo=FALSE,fig.cap="\\label{fig:MAR} Distribution of complete data and oberved data."}
+
+```
+
